@@ -1,0 +1,73 @@
+{
+    "name": "nexaide-refactor",
+    "displayName": "NEXAIDE Refactored",
+    "description": "Refactored version of NEXAIDE with modular architecture",
+    "version": "0.0.1",
+    "engines": {
+        "vscode": "^1.85.0"
+    },
+    "categories": [
+        "Other"
+    ],
+    "activationEvents": [],
+    "main": "./dist/extension.js",
+    "contributes": {
+        "commands": [
+            {
+                "command": "nexaide.openChat",
+                "title": "NEXAIDE: Open Chat"
+            }
+        ],
+        "viewsContainers": {
+            "activitybar": [
+                {
+                    "id": "nexaide-sidebar",
+                    "title": "NEXAIDE",
+                    "icon": "resources/icon.svg"
+                }
+            ]
+        },
+        "views": {
+            "nexaide-sidebar": [
+                {
+                    "type": "webview",
+                    "id": "nexaide.chatView",
+                    "name": "Chat",
+                    "icon": "resources/icon.svg"
+                }
+            ]
+        }
+    },
+    "scripts": {
+        "vscode:prepublish": "npm run package",
+        "compile": "npm run compile-ui && webpack",
+        "compile-ui": "npm run build --prefix webview-ui",
+        "watch": "npm run compile-ui && webpack --watch",
+        "package": "webpack --mode production --devtool hidden-source-map",
+        "compile-tests": "tsc -p . --outDir out",
+        "watch-tests": "tsc -p . -w --outDir out",
+        "pretest": "npm run compile-tests && npm run compile && npm run lint",
+        "lint": "eslint src --ext ts",
+        "test": "node ./out/test/runTest.js"
+    },
+    "devDependencies": {
+        "@types/node": "18.x",
+        "@types/uuid": "^10.0.0",
+        "@types/vscode": "^1.85.0",
+        "@typescript-eslint/eslint-plugin": "^6.15.0",
+        "@typescript-eslint/parser": "^6.15.0",
+        "esbuild": "^0.27.2",
+        "eslint": "^8.56.0",
+        "ts-loader": "^9.5.4",
+        "typescript": "^5.9.3",
+        "webpack": "^5.104.1",
+        "webpack-cli": "^5.1.4"
+    },
+    "dependencies": {
+        "@modelcontextprotocol/sdk": "^0.6.0",
+        "axios": "^1.6.2",
+        "eventsource-parser": "^1.1.1",
+        "uuid": "^9.0.1",
+        "zod": "^3.22.4"
+    }
+}

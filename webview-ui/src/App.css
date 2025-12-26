@@ -1,0 +1,318 @@
+* {
+  box-sizing: border-box;
+}
+
+body {
+  padding: 0;
+  margin: 0;
+  background-color: var(--vscode-sideBar-background);
+  color: var(--vscode-editor-foreground);
+  font-family: var(--vscode-font-family);
+  font-size: 13px;
+  line-height: 1.5;
+  overflow: hidden;
+}
+
+@keyframes spin {
+  from {
+    transform: rotate(0deg);
+  }
+
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.spin-anim {
+  animation: spin 1s linear infinite;
+}
+
+.container {
+  display: flex;
+  flex-direction: column;
+  height: 100vh;
+  width: 100%;
+  max-width: 100vw;
+  overflow: hidden;
+  background-color: var(--vscode-sideBar-background);
+}
+
+.chat-list {
+  flex: 1;
+  overflow-y: auto;
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  /* Scrollbar Styling */
+  scrollbar-width: thin;
+  scrollbar-color: var(--vscode-scrollbarSlider-background) transparent;
+}
+
+.chat-list::-webkit-scrollbar {
+  width: 10px;
+}
+
+.chat-list::-webkit-scrollbar-thumb {
+  background: var(--vscode-scrollbarSlider-background);
+  border-radius: 5px;
+  border: 2px solid var(--vscode-sideBar-background);
+  /* Padding effect */
+}
+
+.chat-list::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.message {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  max-width: 100%;
+}
+
+.message.user {
+  align-self: flex-end;
+  align-items: flex-end;
+}
+
+.message.assistant {
+  align-self: flex-start;
+}
+
+.role-tag {
+  font-size: 11px;
+  opacity: 0.7;
+  margin-bottom: 2px;
+}
+
+.content {
+  padding: 8px 12px;
+  border-radius: 8px;
+  background: var(--vscode-editor-background);
+  white-space: pre-wrap;
+  word-wrap: break-word;
+  max-width: 90%;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.message.user .content {
+  background: var(--vscode-button-secondaryBackground);
+  color: var(--vscode-button-secondaryForeground);
+}
+
+.thinking-indicator {
+  padding: 8px;
+  font-style: italic;
+  opacity: 0.6;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+/* --- Figma Style Input Card --- */
+
+.input-area {
+  padding: 16px;
+  background: var(--vscode-sideBar-background);
+}
+
+.input-container {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  padding: 16px;
+  gap: 24px;
+  /* User Spec: 24px */
+
+  width: 100%;
+  max-width: 100%;
+  /* Prevent overflow */
+  box-sizing: border-box;
+  /* Double check */
+
+  min-height: 114px;
+
+  /* Floating Card Style */
+  /* User requested background: #FFFFFF and border: #D9D9D9.
+     To make this work in dark mode we use Input Background, but override border. */
+  background: var(--vscode-input-background);
+  border: 1px solid #333333;
+  /* Default dark mode border */
+  border-radius: 16px;
+  /* User Spec */
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+}
+
+/* Light Theme overrides if possible, otherwise rely on focus */
+@media (prefers-color-scheme: light) {
+  .input-container {
+    border-color: #D9D9D9;
+    background: #FFFFFF;
+  }
+}
+
+.input-container:focus-within {
+  border-color: var(--vscode-focusBorder);
+}
+
+.chat-input {
+  width: 100%;
+  background: transparent;
+  border: none;
+  color: var(--vscode-input-foreground);
+  font-family: inherit;
+  font-size: 16px;
+  /* User Spec */
+  line-height: 140%;
+  resize: none;
+  outline: none;
+  min-height: 22px;
+  padding: 0;
+}
+
+.input-footer {
+  display: flex;
+  flex-direction: row;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0px;
+  width: 100%;
+  flex: none;
+  order: 1;
+  position: relative;
+  /* For dropdown positioning if needed */
+}
+
+/* New Model Selector Styles */
+.model-selector-container {
+  position: relative;
+}
+
+.model-selector-btn {
+  display: flex;
+  flex-direction: row;
+  justify-content: center;
+  align-items: center;
+  padding: 0px 17px 0px 18px;
+  /* Exact spec */
+  gap: 5px;
+  /* Exact spec */
+
+  min-width: 120px;
+  /* Exact width from spec (used as min to be safe) */
+  height: 44px;
+  /* Exact height */
+
+  background: var(--vscode-button-secondaryBackground);
+  color: var(--vscode-button-secondaryForeground);
+  border: 1px solid var(--vscode-widget-border);
+  border-radius: 100px;
+  /* Exact radius */
+  cursor: pointer;
+
+  font-family: 'SF Pro', system-ui, sans-serif;
+  font-weight: 700;
+  /* Bold title */
+  font-size: 14px;
+  /* Scaled for readability, 22px is too big for this context */
+  user-select: none;
+  transition: all 0.2s;
+}
+
+.model-selector-btn:hover {
+  background: var(--vscode-button-secondaryHoverBackground);
+}
+
+.model-selector-text {
+  flex: 1;
+  text-align: center;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  /* Ensure bold font is inherited or set here */
+  font-weight: 700;
+}
+
+/* Dropdown Menu */
+.model-dropdown-menu {
+  position: absolute;
+  bottom: 110%;
+  /* Show above button */
+  left: 0;
+  width: 200px;
+  background: var(--vscode-dropdown-background);
+  color: var(--vscode-dropdown-foreground);
+  border: 1px solid var(--vscode-widget-border);
+  border-radius: 8px;
+  padding: 4px;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+  z-index: 100;
+}
+
+.model-option {
+  padding: 8px 12px;
+  border-radius: 4px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 13px;
+}
+
+.model-option:hover {
+  background: var(--vscode-list-hoverBackground);
+}
+
+.model-option.selected {
+  background: var(--vscode-list-activeSelectionBackground);
+  color: var(--vscode-list-activeSelectionForeground);
+}
+
+.toolbar-left {
+  display: flex;
+  align-items: center;
+}
+
+.toolbar-right {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  /* Space between the moved icons and send button */
+}
+
+/* Icon Buttons */
+.icon-btn {
+  /* Keep existing styles */
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  width: 36px;
+  height: 36px;
+  border-radius: 32px;
+  cursor: pointer;
+  background: transparent;
+  border: 1px solid transparent;
+  color: var(--vscode-icon-foreground);
+}
+
+.icon-btn:hover {
+  background: var(--vscode-toolbar-hoverBackground);
+}
+
+/* Send Button Specs from User:
+   background: #D9D9D9; border: 1px solid #B3B3B3;
+   This needs to adapt to theme. In dark mode #D9D9D9 is too bright.
+*/
+.icon-btn.primary {
+  background: var(--vscode-button-background);
+  color: var(--vscode-button-foreground);
+  border: 1px solid transparent;
+}
+
+.icon-btn.primary:hover {
+  background: var(--vscode-button-hoverBackground);
+}
