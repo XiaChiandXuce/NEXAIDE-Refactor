@@ -6,7 +6,8 @@ import { MessagingService } from './messaging';
 import { AgentFSM } from '../core/agentFsm';
 import { ConfigManager } from '../core/configManager';
 import { SessionManager } from '../core/sessionManager';
-import { LLMClient } from '../api/llmClient';
+import { LLMFactory } from '../core/llm/factory';
+import { ILLMProvider } from '../core/llm/types';
 import { McpClientService } from '../services/mcpClient';
 import { UserAction } from '../api/types';
 
@@ -17,7 +18,7 @@ export class AIChatViewProvider implements vscode.WebviewViewProvider {
     private fsm: AgentFSM;
     private config: ConfigManager;
     private session: SessionManager;
-    private llm: LLMClient;
+    private llmProvider: ILLMProvider | null = null;
     private mcp: McpClientService | null = null;
 
     constructor(
@@ -26,7 +27,7 @@ export class AIChatViewProvider implements vscode.WebviewViewProvider {
         this.config = new ConfigManager();
         this.fsm = new AgentFSM();
         this.session = new SessionManager();
-        this.llm = new LLMClient();
+        // LLM Provider is initialized lazily based on user config
 
         // Wire up the controller logic
         this.messaging = new MessagingService(this.handleUserAction.bind(this));
@@ -74,37 +75,37 @@ export class AIChatViewProvider implements vscode.WebviewViewProvider {
         this.fsm.transition('THINKING');
         this.session.addMessage('user', content);
 
-        // Optimistic UI update
-        this.messaging.send({ type: 'APPEND_TEXT', text: `\n> ${content}\n` });
+
 
         const cfg = this.config.getConfig();
 
         try {
-            await this.llm.streamChat(
-                cfg.apiUrl,
-                cfg.apiKey,
+            // Lazy initialization or reconfiguration of provider
+            // In a real app, we might cache this based on model ID
+            this.llmProvider = LLMFactory.createProvider(cfg.model || 'qwen-max');
+            await this.llmProvider.initialize();
+
+            await this.llmProvider.streamChat(
                 {
-                    model: cfg.model,
                     messages: this.session.getMessages().map(m => ({ role: m.role, content: m.content })),
                     temperature: cfg.temperature
                 },
-                {
-                    onToken: (token) => {
+                (chunk) => {
+                    // On first token, switch to WRITING if we were thinking
+                    if (this.fsm.getState() === 'THINKING') {
                         this.fsm.transition('WRITING');
-                        this.messaging.send({ type: 'APPEND_TEXT', text: token });
-                    },
-                    onError: (err) => {
-                        this.fsm.transition('ERROR');
-                        this.messaging.send({ type: 'ERROR', message: err.message });
-                    },
-                    onDone: () => {
-                        this.fsm.transition('IDLE');
-                        this.messaging.send({ type: 'DONE' });
                     }
+                    this.messaging.send({ type: 'APPEND_TEXT', text: chunk });
                 }
             );
-        } catch (e) {
+
+            this.fsm.transition('IDLE');
+            this.messaging.send({ type: 'DONE' });
+
+        } catch (e: any) {
             this.fsm.transition('ERROR');
+            this.messaging.send({ type: 'ERROR', message: e.message || 'Unknown error' });
+            vscode.window.showErrorMessage(`LLM Error: ${e.message}`);
         }
     }
 

@@ -64,40 +64,138 @@ body {
   background: transparent;
 }
 
+/* Message Styles (Legacy - Now handled by MessageBubble.tsx / SystemBubble.tsx) */
+/* Adaptive Variables */
+:root {
+  --chat-user-bg: #F5F5F5;
+  --chat-user-border: #D9D9D9;
+  --chat-user-text: #1E1E1E;
+  --chat-ai-icon-border: #1E1E1E;
+  --code-bg: #F5F5F5;
+  --code-border: #D9D9D9;
+  --code-num-bg: #FFFFFF;
+  --code-num-text: #B3B3B3;
+  --code-text: #BF6A02;
+}
+
+/* Dark Mode Overrides (VS Code standard class) */
+body.vscode-dark {
+  --chat-user-bg: #2D2D2D;
+  --chat-user-border: #404040;
+  --chat-user-text: #E0E0E0;
+  --chat-ai-icon-border: #E0E0E0;
+  --code-bg: #1E1E1E;
+  --code-border: #404040;
+  --code-num-bg: #252526;
+  --code-num-text: #6E7681;
+  --code-text: #CE9178;
+}
+
+/* High Contrast Mode Overrides */
+body.vscode-high-contrast {
+  --chat-user-bg: transparent;
+  --chat-user-border: var(--vscode-contrastBorder);
+  --chat-user-text: var(--vscode-foreground);
+  --chat-ai-icon-border: var(--vscode-contrastBorder);
+
+  --code-bg: transparent;
+  --code-border: var(--vscode-contrastBorder);
+  --code-num-bg: transparent;
+  --code-num-text: var(--vscode-foreground);
+  --code-text: var(--vscode-foreground);
+}
+
+/* Legacy .message Layout Styles - Removed as Bubbles handle layout now */
+/*
 .message {
   display: flex;
-  flex-direction: column;
-  gap: 4px;
   max-width: 100%;
 }
 
 .message.user {
   align-self: flex-end;
-  align-items: flex-end;
+  flex-direction: column;
+  align-items: flex-start;
+  background: var(--chat-user-bg);
+  border: 1px solid var(--chat-user-border);
+  border-radius: 8px;
+  padding: 6px 8px;
+  font-family: 'Inter', system-ui, sans-serif;
+  font-size: 16px;
+  line-height: 140%;
+  color: var(--chat-user-text);
+  max-width: 85%;
 }
 
 .message.assistant {
   align-self: flex-start;
+  flex-direction: row;
+  align-items: flex-start;
+  gap: 8px;
+  width: 100%;
+  color: var(--vscode-editor-foreground);
+  font-family: 'Inter', system-ui, sans-serif;
+  font-size: 16px;
+  line-height: 140%;
+}
+
+.message-icon {
+  flex: none;
+  width: 20px;
+  height: 20px;
+  border: 2px solid var(--chat-ai-icon-border);
+  border-radius: 4px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.message-content {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+*/
+
+/* Code Block Stylings (Future Proofing for Markdown) */
+/* "AI Chat -> Code Block" Spec */
+.code-block-container {
+  display: flex;
+  flex-direction: row;
+  border: 1px solid var(--code-border);
+  border-radius: 16px;
+  overflow: hidden;
+  /* Clip children to radius */
+  margin-top: 8px;
+  font-family: 'Roboto Mono', monospace;
+  font-size: 16px;
+}
+
+/* Line Number Column */
+.code-line-numbers {
+  width: 48px;
+  background: var(--code-num-bg);
+  border-right: 1px solid var(--code-border);
+  padding: 16px 8px;
+  text-align: right;
+  color: var(--code-num-text);
+  line-height: 130%;
+  user-select: none;
+}
+
+/* Code Content Column */
+.code-content {
+  flex: 1;
+  background: var(--code-bg);
+  padding: 16px 8px;
+  color: var(--code-text);
+  line-height: 130%;
+  overflow-x: auto;
+  white-space: pre;
 }
 
 .role-tag {
-  font-size: 11px;
-  opacity: 0.7;
-  margin-bottom: 2px;
-}
-
-.content {
-  padding: 8px 12px;
-  border-radius: 8px;
-  background: var(--vscode-editor-background);
-  white-space: pre-wrap;
-  word-wrap: break-word;
-  max-width: 90%;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-}
-
-.message.user .content {
-  background: var(--vscode-button-secondaryBackground);
   color: var(--vscode-button-secondaryForeground);
 }
 
@@ -109,6 +207,8 @@ body {
   align-items: center;
   gap: 8px;
 }
+
+
 
 /* --- Figma Style Input Card --- */
 
@@ -137,8 +237,7 @@ body {
   /* User requested background: #FFFFFF and border: #D9D9D9.
      To make this work in dark mode we use Input Background, but override border. */
   background: var(--vscode-input-background);
-  border: 1px solid #333333;
-  /* Default dark mode border */
+  border: 1px solid var(--vscode-input-border, #333333);
   border-radius: 16px;
   /* User Spec */
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
@@ -315,4 +414,95 @@ body {
 
 .icon-btn.primary:hover {
   background: var(--vscode-button-hoverBackground);
+}
+
+/* --- Thinking Widget Styles --- */
+
+.thinking-widget {
+  display: flex;
+  flex-direction: column;
+  background: var(--vscode-editor-background);
+  border: 1px solid var(--vscode-widget-border);
+  border-radius: 8px;
+  margin-top: 8px;
+  overflow: hidden;
+  font-family: 'Inter', system-ui, sans-serif;
+}
+
+.thinking-header {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  padding: 8px 12px;
+  gap: 8px;
+  cursor: pointer;
+  background: var(--vscode-sideBar-background);
+  user-select: none;
+  transition: background 0.2s;
+}
+
+.thinking-header:hover {
+  background: var(--vscode-list-hoverBackground);
+}
+
+.thinking-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--vscode-foreground);
+}
+
+.thinking-icon.success {
+  color: var(--vscode-testing-iconPassed);
+}
+
+.thinking-label {
+  flex: 1;
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--vscode-descriptionForeground);
+}
+
+.thinking-chevron {
+  display: flex;
+  align-items: center;
+  transition: transform 0.2s;
+  color: var(--vscode-icon-foreground);
+}
+
+.thinking-chevron.expanded {
+  transform: rotate(180deg);
+}
+
+.thinking-content {
+  padding: 12px;
+  background: var(--vscode-editor-background);
+  border-top: 1px solid var(--vscode-widget-border);
+  font-size: 13px;
+  line-height: 150%;
+  color: var(--vscode-editor-foreground);
+  animation: fadeIn 0.2s ease-out;
+}
+
+.thought-stream {
+  white-space: pre-wrap;
+  font-family: 'Roboto Mono', monospace;
+  opacity: 0.9;
+}
+
+.thought-placeholder {
+  font-style: italic;
+  opacity: 0.6;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(-4px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
