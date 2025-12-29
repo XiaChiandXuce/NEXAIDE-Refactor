@@ -7,13 +7,15 @@ export type UserAction =
     | { type: 'SUBMIT_PROMPT', content: string }
     | { type: 'STOP_GENERATION' }
     | { type: 'CLEAR_HISTORY' }
-    | { type: 'SET_CONFIG', key: string, value: any };
+    | { type: 'SET_CONFIG', key: string, value: any }
+    | { type: 'EDIT_MESSAGE', payload: { id: string, newContent: string } };
 
 // --- Core Protocol (Core -> View) ---
 export type AgentEvent =
     | { type: 'STATE_CHANGED', newState: AgentState }
     | { type: 'APPEND_TEXT', text: string }
     | { type: 'REPLACE_TEXT', text: string } // For full refresh
+    | { type: 'SYNC_MESSAGES', messages: { role: 'user' | 'assistant' | 'system', content: string, id: string }[] }
     | { type: 'ERROR', message: string }
     | { type: 'DONE' };
 

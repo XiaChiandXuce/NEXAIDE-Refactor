@@ -66,24 +66,62 @@ export class AIChatViewProvider implements vscode.WebviewViewProvider {
                 this.session.startNewSession();
                 this.messaging.send({ type: 'REPLACE_TEXT', text: '' });
                 break;
+            case 'EDIT_MESSAGE':
+                await this.handleEditMessage(action.payload.id, action.payload.newContent);
+                break;
         }
     }
 
-    private async handleSubmit(content: string) {
+    private async handleEditMessage(id: string, newContent: string) {
+        // 1. Abort current generation if active
+        if (this.fsm.getState() === 'WRITING' || this.fsm.getState() === 'THINKING') {
+            this.handleStop();
+        }
+
+        try {
+            // 2. Truncate and Update
+            this.session.truncateFrom(id);
+            this.session.updateMessageContent(id, newContent);
+
+            // 3. Notify Frontend of state change (truncated history)
+            // 3. Notify Frontend of state change (truncated history)
+            this.syncState();
+
+            // 4. Regenerate
+            await this.handleSubmit(newContent, { isRegeneration: true });
+
+        } catch (e: any) {
+            vscode.window.showErrorMessage(`Edit failed: ${e.message}`);
+        }
+    }
+
+    private async handleSubmit(content: string, options?: { isRegeneration: boolean }) {
         if (this.fsm.getState() !== 'IDLE') return;
 
         this.fsm.transition('THINKING');
-        this.session.addMessage('user', content);
 
+        // 1. Add User Message (if not regenerating)
+        if (!options?.isRegeneration) {
+            this.session.addMessage('user', content);
+        }
 
+        // 2. SYNC immediately so frontend gets the User Message ID
+        this.syncState();
 
         const cfg = this.config.getConfig();
+        let fullResponse = ''; // Accumulator
 
         try {
-            // Lazy initialization or reconfiguration of provider
-            // In a real app, we might cache this based on model ID
+            // Lazy initialization
             this.llmProvider = LLMFactory.createProvider(cfg.model || 'qwen-max');
             await this.llmProvider.initialize();
+
+            // Notify frontend to clear partial text if needed (for regeneration)
+            if (options?.isRegeneration) {
+                this.messaging.send({ type: 'REPLACE_TEXT', text: '' });
+                // We also need to ensure frontend state matches our truncated session BEFORE streaming
+                // The syncState() above handles that.
+            }
 
             await this.llmProvider.streamChat(
                 {
@@ -91,13 +129,21 @@ export class AIChatViewProvider implements vscode.WebviewViewProvider {
                     temperature: cfg.temperature
                 },
                 (chunk) => {
-                    // On first token, switch to WRITING if we were thinking
+                    if (this.fsm.getState() === 'IDLE') return; // Interrupted
+
                     if (this.fsm.getState() === 'THINKING') {
                         this.fsm.transition('WRITING');
                     }
+                    fullResponse += chunk;
                     this.messaging.send({ type: 'APPEND_TEXT', text: chunk });
                 }
             );
+
+            // 3. Save Assistant Message and Sync
+            if (fullResponse && this.fsm.getState() !== 'IDLE') {
+                this.session.addMessage('assistant', fullResponse);
+                this.syncState();
+            }
 
             this.fsm.transition('IDLE');
             this.messaging.send({ type: 'DONE' });
@@ -107,6 +153,17 @@ export class AIChatViewProvider implements vscode.WebviewViewProvider {
             this.messaging.send({ type: 'ERROR', message: e.message || 'Unknown error' });
             vscode.window.showErrorMessage(`LLM Error: ${e.message}`);
         }
+    }
+
+    private syncState() {
+        this.messaging.send({
+            type: 'SYNC_MESSAGES',
+            messages: this.session.getMessages().map(m => ({
+                id: m.id,
+                role: m.role,
+                content: m.content
+            }))
+        });
     }
 
     private handleStop() {

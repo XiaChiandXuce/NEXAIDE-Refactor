@@ -1,48 +1,107 @@
 import React from 'react';
-import { Actions, Bubble, type BubbleProps } from '@ant-design/x';
-import { AntDesignOutlined, RedoOutlined, CopyOutlined, UserOutlined } from '@ant-design/icons';
+import { Actions, Bubble } from '@ant-design/x';
+import { AntDesignOutlined, RedoOutlined, CopyOutlined, UserOutlined, EditOutlined } from '@ant-design/icons';
 import { Avatar } from 'antd';
 import type { Message } from '../../hooks/useExtension';
 
 import { MarkdownRenderer } from '../markdown/MarkdownRenderer';
 
 interface MessageBubbleProps {
-    message: Message;
+    message: Message; // Using the type from useExtension
     loading?: boolean;
-    typing?: BubbleProps['typing'];
+    typing?: {
+        step: number;
+        interval: number;
+        effect: 'typing' | 'fade-in';
+    };
     streaming?: boolean;
+    onEditConfirm?: (id: string, newContent: string) => void;
 }
 
 // Source-0.0.1: https://x.ant.design/components/bubble-cn?utm_source=chatgpt.com
 
-export const MessageBubble: React.FC<MessageBubbleProps> = ({ message, loading, typing, streaming }) => {
+export const MessageBubble: React.FC<MessageBubbleProps> = ({ message, loading, typing, streaming, onEditConfirm }) => {
     const isAssistant = message.role === 'assistant';
 
-    const actionItems = (content: string) => [
+    // State for Phase 1: Editable Bubble
+    // In Phase 2, this state might be managed by a global store or context
+    const [isEditing, setIsEditing] = React.useState(false);
+    const [localContent, setLocalContent] = React.useState(typeof message.content === 'string' ? message.content : '');
+
+    // Sync localContent if prop changes (and not editing)
+    // Sync localContent if prop changes (and not editing)
+    // We utilize a ref to track the previous prop value to avoid overwriting local edits
+    // when simple re-renders occur or when isEditing toggles.
+    const prevMessageContent = React.useRef(message.content);
+
+    React.useEffect(() => {
+        if (message.content !== prevMessageContent.current) {
+            if (!isEditing && typeof message.content === 'string') {
+                setLocalContent(message.content);
+            }
+            prevMessageContent.current = message.content;
+        }
+    }, [message.content, isEditing]);
+
+    // Unified handleAction for both User and Assistant
+    const handleActionClick = (key: string, content: string) => {
+        switch (key) {
+            case 'copy':
+                navigator.clipboard.writeText(content);
+                break;
+            case 'retry':
+                // Add retry logic here
+                break;
+            case 'edit':
+                setIsEditing(true);
+                break;
+        }
+    };
+
+    const actionItems = [
         {
             key: 'copy',
             label: 'Copy',
             icon: <CopyOutlined style={{ color: 'var(--vscode-icon-foreground)' }} />,
-            onClick: () => {
-                navigator.clipboard.writeText(content);
-            },
         },
         {
             key: 'retry',
             icon: <RedoOutlined style={{ color: 'var(--vscode-icon-foreground)' }} />,
             label: 'Retry',
-            // Add retry logic callback here if needed
         },
     ];
 
+    const userActions = [
+        {
+            key: 'edit',
+            label: 'Edit',
+            icon: <EditOutlined style={{ color: 'var(--vscode-icon-foreground)' }} />,
+        }
+    ];
+
+    const handleEditConfirm = (newContent: string) => {
+        setIsEditing(false);
+        setLocalContent(newContent);
+
+        if (onEditConfirm && message.id) {
+            onEditConfirm(message.id, newContent);
+        } else {
+            console.warn("Cannot edit message: Missing ID or onEditConfirm handler", message);
+        }
+    };
+
+    const handleEditCancel = () => {
+        setIsEditing(false);
+        // Revert to original if needed, but localContent is already state, so maybe just stop editing
+        setLocalContent(typeof message.content === 'string' ? message.content : '');
+    };
+
     return (
         <Bubble
-            content={message.content}
+            // Use localContent for display to support optimistic updates
+            content={localContent}
             loading={loading}
             typing={typing}
-            // For older ADX versions it might be 'loading' behavior, but user snippet shows 'streaming'
-            // We pass it if provided, or rely on internal logic if Ant Design X supports it directly.
-            // Note: If type error occurs, we might need to cast or check version.
             {...(streaming !== undefined ? { streaming } : {})}
             placement={isAssistant ? 'start' : 'end'}
             // Use specialized Markdown Renderer for rich text content
@@ -60,8 +119,6 @@ export const MessageBubble: React.FC<MessageBubbleProps> = ({ message, loading, 
                     {isAssistant ? 'Chat' : 'User'}
                 </span>
             }
-            // Use different styling or props based on role if needed
-            // For assistant, show avatar and actions
             avatar={
                 isAssistant ? (
                     <Avatar icon={<AntDesignOutlined />} style={{ backgroundColor: 'transparent', color: 'var(--vscode-foreground)' }} />
@@ -69,17 +126,22 @@ export const MessageBubble: React.FC<MessageBubbleProps> = ({ message, loading, 
                     <Avatar icon={<UserOutlined />} style={{ backgroundColor: 'var(--vscode-button-background)' }} />
                 )
             }
-            // Only show actions for assistant messages generally, placed on the side (extra)
-            // Place actions in the footer, external bottom-right
+            // Actions: Assistant gets Copy/Retry, User gets Edit
             footer={
-                !loading && isAssistant ? (
+                !loading ? (
                     <Actions
-                        items={actionItems(typeof message.content === 'string' ? message.content : '')}
+                        items={isAssistant ? actionItems : userActions}
+                        onClick={(info) => handleActionClick(info.key as string, localContent)}
                         style={{ opacity: 0.6 }} // Subtle by default
                     />
                 ) : null
             }
             footerPlacement="outer-end"
+
+            // Editable Props
+            editable={isEditing}
+            onEditConfirm={handleEditConfirm}
+            onEditCancel={handleEditCancel}
 
             // Style overrides to match VS Code theme
             style={{

@@ -7,11 +7,12 @@ import { ThinkingWidget } from './ThinkingWidget';
 interface ChatListProps {
     messages: Message[];
     isThinking: boolean;
+    onEditMessage: (id: string, newContent: string) => void;
 }
 
 import { BrandLogo } from '../branding/BrandLogo';
 
-export const ChatList: React.FC<ChatListProps> = ({ messages, isThinking }) => {
+export const ChatList: React.FC<ChatListProps> = ({ messages, isThinking, onEditMessage }) => {
     const bottomRef = useRef<HTMLDivElement>(null);
 
     useEffect(() => {
@@ -55,6 +56,7 @@ export const ChatList: React.FC<ChatListProps> = ({ messages, isThinking }) => {
                         message={msg}
                         typing={{ step: 2, interval: 30, effect: 'typing' }}
                         streaming={isAssistant && isLast && isThinking}
+                        onEditConfirm={onEditMessage}
                     />
                 );
             })}

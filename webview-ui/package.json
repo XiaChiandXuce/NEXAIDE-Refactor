@@ -13,6 +13,7 @@
     "@ant-design/icons": "^6.1.0",
     "@ant-design/x": "^2.1.1",
     "@ant-design/x-markdown": "^2.1.1",
+    "@antv/gpt-vis": "^0.5.12",
     "@vscode/codicons": "^0.0.44",
     "@vscode/webview-ui-toolkit": "^1.4.0",
     "antd": "^6.1.2",

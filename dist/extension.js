@@ -71,29 +71,69 @@ class AIChatViewProvider {
                 this.session.startNewSession();
                 this.messaging.send({ type: 'REPLACE_TEXT', text: '' });
                 break;
+            case 'EDIT_MESSAGE':
+                await this.handleEditMessage(action.payload.id, action.payload.newContent);
+                break;
         }
     }
-    async handleSubmit(content) {
+    async handleEditMessage(id, newContent) {
+        // 1. Abort current generation if active
+        if (this.fsm.getState() === 'WRITING' || this.fsm.getState() === 'THINKING') {
+            this.handleStop();
+        }
+        try {
+            // 2. Truncate and Update
+            this.session.truncateFrom(id);
+            this.session.updateMessageContent(id, newContent);
+            // 3. Notify Frontend of state change (truncated history)
+            // 3. Notify Frontend of state change (truncated history)
+            this.syncState();
+            // 4. Regenerate
+            await this.handleSubmit(newContent, { isRegeneration: true });
+        }
+        catch (e) {
+            vscode__WEBPACK_IMPORTED_MODULE_0__.window.showErrorMessage(`Edit failed: ${e.message}`);
+        }
+    }
+    async handleSubmit(content, options) {
         if (this.fsm.getState() !== 'IDLE')
             return;
         this.fsm.transition('THINKING');
-        this.session.addMessage('user', content);
+        // 1. Add User Message (if not regenerating)
+        if (!options?.isRegeneration) {
+            this.session.addMessage('user', content);
+        }
+        // 2. SYNC immediately so frontend gets the User Message ID
+        this.syncState();
         const cfg = this.config.getConfig();
+        let fullResponse = ''; // Accumulator
         try {
-            // Lazy initialization or reconfiguration of provider
-            // In a real app, we might cache this based on model ID
+            // Lazy initialization
             this.llmProvider = _core_llm_factory__WEBPACK_IMPORTED_MODULE_5__.LLMFactory.createProvider(cfg.model || 'qwen-max');
             await this.llmProvider.initialize();
+            // Notify frontend to clear partial text if needed (for regeneration)
+            if (options?.isRegeneration) {
+                this.messaging.send({ type: 'REPLACE_TEXT', text: '' });
+                // We also need to ensure frontend state matches our truncated session BEFORE streaming
+                // The syncState() above handles that.
+            }
             await this.llmProvider.streamChat({
                 messages: this.session.getMessages().map(m => ({ role: m.role, content: m.content })),
                 temperature: cfg.temperature
             }, (chunk) => {
-                // On first token, switch to WRITING if we were thinking
+                if (this.fsm.getState() === 'IDLE')
+                    return; // Interrupted
                 if (this.fsm.getState() === 'THINKING') {
                     this.fsm.transition('WRITING');
                 }
+                fullResponse += chunk;
                 this.messaging.send({ type: 'APPEND_TEXT', text: chunk });
             });
+            // 3. Save Assistant Message and Sync
+            if (fullResponse && this.fsm.getState() !== 'IDLE') {
+                this.session.addMessage('assistant', fullResponse);
+                this.syncState();
+            }
             this.fsm.transition('IDLE');
             this.messaging.send({ type: 'DONE' });
         }
@@ -102,6 +142,16 @@ class AIChatViewProvider {
             this.messaging.send({ type: 'ERROR', message: e.message || 'Unknown error' });
             vscode__WEBPACK_IMPORTED_MODULE_0__.window.showErrorMessage(`LLM Error: ${e.message}`);
         }
+    }
+    syncState() {
+        this.messaging.send({
+            type: 'SYNC_MESSAGES',
+            messages: this.session.getMessages().map(m => ({
+                id: m.id,
+                role: m.role,
+                content: m.content
+            }))
+        });
     }
     handleStop() {
         // Logic to abort LLM request would go here (need to expose AbortController in LLMClient)
@@ -302,6 +352,23 @@ class SessionManager {
         this.currentSession.messages.push(msg);
         this.currentSession.updatedAt = Date.now();
         return msg;
+    }
+    truncateFrom(messageId) {
+        const index = this.currentSession.messages.findIndex(m => m.id === messageId);
+        if (index === -1) {
+            throw new Error(`Message with ID ${messageId} not found`);
+        }
+        // Keep messages up to and including the target message
+        this.currentSession.messages = this.currentSession.messages.slice(0, index + 1);
+        this.currentSession.updatedAt = Date.now();
+    }
+    updateMessageContent(messageId, content) {
+        const message = this.currentSession.messages.find(m => m.id === messageId);
+        if (!message) {
+            throw new Error(`Message with ID ${messageId} not found`);
+        }
+        message.content = content;
+        this.currentSession.updatedAt = Date.now();
     }
     getMessages() {
         return this.currentSession.messages;

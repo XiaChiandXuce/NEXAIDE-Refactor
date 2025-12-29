@@ -2,6 +2,7 @@ import React from 'react';
 import XMarkdown from '@ant-design/x-markdown';
 import { CodeConsumer } from './consumers/CodeConsumer';
 import { LinkConsumer } from './consumers/LinkConsumer';
+import { ChartConsumer } from './consumers/ChartConsumer';
 
 interface MarkdownRendererProps {
     content: string;
@@ -13,7 +14,8 @@ export const MarkdownRenderer: React.FC<MarkdownRendererProps> = ({ content }) =
             content={content}
             components={{
                 code: CodeConsumer,
-                a: LinkConsumer
+                a: LinkConsumer,
+                'custom-line': ChartConsumer
             }}
             // Style overrides to ensure it fits into VS Code theme
             style={{

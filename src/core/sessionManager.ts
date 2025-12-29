@@ -52,6 +52,25 @@ export class SessionManager {
         return msg;
     }
 
+    public truncateFrom(messageId: string): void {
+        const index = this.currentSession.messages.findIndex(m => m.id === messageId);
+        if (index === -1) {
+            throw new Error(`Message with ID ${messageId} not found`);
+        }
+        // Keep messages up to and including the target message
+        this.currentSession.messages = this.currentSession.messages.slice(0, index + 1);
+        this.currentSession.updatedAt = Date.now();
+    }
+
+    public updateMessageContent(messageId: string, content: string): void {
+        const message = this.currentSession.messages.find(m => m.id === messageId);
+        if (!message) {
+            throw new Error(`Message with ID ${messageId} not found`);
+        }
+        message.content = content;
+        this.currentSession.updatedAt = Date.now();
+    }
+
     public getMessages(): ChatMessage[] {
         return this.currentSession.messages;
     }
