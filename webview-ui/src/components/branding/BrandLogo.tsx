@@ -6,7 +6,7 @@ import logo from '../../assets/nexaide-logo.svg';
 export interface BrandLogoProps {
     status?: 'idle' | 'thinking' | 'error';
     onClick?: () => void;
-    size?: 'small' | 'medium' | 'large';
+    size?: 'small' | 'medium' | 'large' | number;
 }
 
 export const BrandLogo: React.FC<BrandLogoProps> = ({ status = 'idle', onClick, size = 'medium' }) => {
@@ -17,7 +17,7 @@ export const BrandLogo: React.FC<BrandLogoProps> = ({ status = 'idle', onClick, 
         onClick?.();
     };
 
-    const logoSize = size === 'small' ? 32 : size === 'medium' ? 48 : 64;
+    const logoSize = typeof size === 'number' ? size : (size === 'small' ? 32 : size === 'medium' ? 48 : 64);
 
     return (
         <div style={{ padding: '20px', display: 'flex', justifyContent: 'center', width: '100%' }}>

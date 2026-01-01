@@ -42,6 +42,10 @@ export function useChatAdapter(
         },
         onEditCancel: (_id: string) => {
             setEditingId(null);
+        },
+        onFeedback: (id: string, type: 'like' | 'dislike') => {
+            console.log(`[Feedback] Message ${id} received ${type}`);
+            // TODO: Connect to extension message passing
         }
     };
 

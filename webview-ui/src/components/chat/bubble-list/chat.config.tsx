@@ -1,4 +1,4 @@
-import { AntDesignOutlined, UserOutlined, CopyOutlined, RedoOutlined, EditOutlined, CheckOutlined } from '@ant-design/icons';
+import { AntDesignOutlined, UserOutlined, EditOutlined, CheckOutlined } from '@ant-design/icons';
 import type { BubbleListProps } from '@ant-design/x';
 import { Actions } from '@ant-design/x';
 import { Avatar } from 'antd';
@@ -32,18 +32,35 @@ const COMMON_STYLES = {
  * Action Strategy
  * Decoupled logic for actions. The actual handlers are passed from the Adapter.
  */
-interface ActionHandlers {
+export interface ActionHandlers {
     onCopy: (content: string) => void;
     onRetry: (id: string) => void;
     onEdit: (id: string) => void;
     onEditConfirm: (id: string, content: string) => void;
     onEditCancel: (id: string) => void;
+    onFeedback: (id: string, type: 'like' | 'dislike') => void;
 }
+
+import { CustomLoading } from './components/CustomLoading';
+import { FeedbackActions } from './components/FeedbackActions';
+
+// 特性开关 (Feature Flag): 自定义加载动画
+// Feature Flag: Custom Loading Animation
+// 
+// 控制组件 (Controlled Component): CustomLoading (Thinking... + Logo 动画 / Animation)
+// 逻辑说明 (Logic):
+// - true:  开启高级品牌动画 (Enable advanced branded animation) -> 使用 CustomLoading 组件 (Use CustomLoading)
+// - false: 关闭高级动画 (Disable advanced animation) -> 回退到 Ant Design 默认的 Loading 样式 (Fallback to default Ant Design loading dots)
+const ENABLE_BRAND_LOADING = false;
 
 export const getBubbleRoles = (handlers: ActionHandlers): BubbleListProps['role'] => ({
     ai: {
         placement: 'start',
         typing: { step: 2, interval: 30, effect: 'typing' },
+        // 动态加载控制 (Dynamic Loading Control):
+        // 如果开关开启，渲染 CustomLoading 组件；否则返回 undefined (显示默认样式)
+        // If enabled, render CustomLoading; otherwise return undefined (show default style)
+        loadingRender: ENABLE_BRAND_LOADING ? () => <CustomLoading /> : undefined,
         avatar: () => (
             <Avatar
                 icon={<AntDesignOutlined />}
@@ -59,19 +76,12 @@ export const getBubbleRoles = (handlers: ActionHandlers): BubbleListProps['role'
         contentRender: (content) => (
             <MarkdownRenderer content={typeof content === 'string' ? content : ''} />
         ),
-        footer: (_content, item) => (
-            <Actions
-                style={{ opacity: 0.6 }}
-                items={[
-                    { key: 'copy', icon: <CopyOutlined style={{ color: 'var(--vscode-icon-foreground) !important' }} />, label: 'Copy' },
-                    { key: 'retry', icon: <RedoOutlined style={{ color: 'var(--vscode-icon-foreground) !important' }} />, label: 'Retry' }
-                ]}
-                onClick={(info) => {
-                    // Check item for safety, though it should be passed
-                    const extendedItem = item as ExtendedBubbleItem;
-                    if (info.key === 'copy') handlers.onCopy(extendedItem.content as string);
-                    if (info.key === 'retry') handlers.onRetry(extendedItem.key as string);
-                }}
+        footer: (content, item) => (
+            // ✨ Semantic Customization: Feedback Actions
+            <FeedbackActions
+                content={typeof content === 'string' ? content : ''}
+                itemKey={item.key?.toString() || ''}
+                handlers={handlers}
             />
         )
     },
