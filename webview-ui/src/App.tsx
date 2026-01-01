@@ -1,5 +1,5 @@
 import { useExtension } from "./hooks/useExtension";
-import { ChatList } from "./components/chat/ChatList";
+import { BubbleListContainer } from "./components/chat/bubble-list";
 import { InputBox } from "./components/input/InputBox";
 import "./App.css";
 
@@ -8,7 +8,7 @@ function App() {
 
     return (
         <div className="container">
-            <ChatList
+            <BubbleListContainer
                 messages={messages}
                 isThinking={isThinking}
                 onEditMessage={editMessage}
