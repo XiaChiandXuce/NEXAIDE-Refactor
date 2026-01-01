@@ -5,6 +5,9 @@ import type { Message } from '../../../hooks/useExtension';
 import { useChatAdapter } from './useChatAdapter';
 import { getBubbleRoles } from './chat.config';
 import { BrandLogo } from '../../branding/BrandLogo';
+import { ThinkingWidget } from '../ThinkingWidget';
+import { useScrollController } from './hooks/useScrollController';
+import { ScrollToBottomButton } from './components/ScrollToBottomButton';
 
 interface BubbleListContainerProps {
 
@@ -36,7 +39,15 @@ export const BubbleListContainer: React.FC<BubbleListContainerProps> = ({
     // 3. Ref: For manual scroll control if needed
     const listRef = useRef<GetRef<typeof Bubble.List>>(null);
 
-    // 4. Parity Logic: Empty State
+    // 4. Logic: Scroll Controller (Hook-based Architecture)
+    const {
+        showScrollDown,
+        onScroll: handleScroll,
+        scrollToBottom,
+        isAutoScrollEnabled
+    } = useScrollController(listRef, messages);
+
+    // 5. Parity Logic: Empty State
     // If no interaction (messages are empty), show BrandLogo
     const hasInteraction = messages.some(m => m.role === 'user' || m.role === 'assistant');
 
@@ -49,17 +60,25 @@ export const BubbleListContainer: React.FC<BubbleListContainerProps> = ({
     }
 
     return (
-        <Bubble.List
-            ref={listRef}
-            items={bubbleItems}
-            role={roles}
-            // Enable autoScroll by default, mimicking existing ChatList behavior
-            autoScroll={true}
-            style={{
-                height: '100%',
-                // Ensure the container handles overflow correctly
-                overflow: 'hidden'
-            }}
-        />
+        <div style={{ display: 'flex', flexDirection: 'column', height: '100%', overflow: 'hidden' }}>
+            <div style={{ position: 'relative', flex: 1, overflow: 'hidden' }}>
+                <Bubble.List
+                    ref={listRef}
+                    items={bubbleItems}
+                    role={roles}
+                    // Enable autoScroll controlled by our hook
+                    autoScroll={isAutoScrollEnabled}
+                    onScroll={handleScroll}
+                    style={{
+                        height: '100%',
+                    }}
+                />
+                <ScrollToBottomButton
+                    visible={showScrollDown}
+                    onClick={() => scrollToBottom(true)}
+                />
+            </div>
+            <ThinkingWidget isThinking={isThinking} />
+        </div>
     );
 };
