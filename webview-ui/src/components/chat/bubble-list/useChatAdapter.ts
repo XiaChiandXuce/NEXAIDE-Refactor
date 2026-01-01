@@ -40,7 +40,7 @@ export function useChatAdapter(
             // 3. Trigger actual update
             onEditMessage(id, content);
         },
-        onEditCancel: (id: string) => {
+        onEditCancel: (_id: string) => {
             setEditingId(null);
         }
     };

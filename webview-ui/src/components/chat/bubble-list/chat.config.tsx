@@ -13,9 +13,9 @@ import type { ExtendedBubbleItem } from './types';
 const COMMON_STYLES = {
     user: {
         content: {
-            backgroundColor: 'var(--chat-user-bg)',
-            border: '1px solid var(--chat-user-border)',
-            color: 'var(--chat-user-text)',
+            backgroundColor: 'var(--chat-user-bg) !important',
+            border: '1px solid var(--chat-user-border) !important',
+            color: 'var(--chat-user-text) !important',
         }
     },
     ai: {
@@ -43,7 +43,7 @@ interface ActionHandlers {
 export const getBubbleRoles = (handlers: ActionHandlers): BubbleListProps['role'] => ({
     ai: {
         placement: 'start',
-        typing: { step: 2, interval: 30 },
+        typing: { step: 2, interval: 30, effect: 'typing' },
         avatar: () => (
             <Avatar
                 icon={<AntDesignOutlined />}
@@ -53,7 +53,7 @@ export const getBubbleRoles = (handlers: ActionHandlers): BubbleListProps['role'
                 }}
             />
         ),
-        header: 'Chat', // Or 'AI'
+        header: <span style={{ color: 'var(--vscode-foreground)' }}>Chat</span>,
         styles: COMMON_STYLES.ai,
         // Reuse MarkdownRenderer for consistent rendering
         contentRender: (content) => (
@@ -63,8 +63,8 @@ export const getBubbleRoles = (handlers: ActionHandlers): BubbleListProps['role'
             <Actions
                 style={{ opacity: 0.6 }}
                 items={[
-                    { key: 'copy', icon: <CopyOutlined />, label: 'Copy' },
-                    { key: 'retry', icon: <RedoOutlined />, label: 'Retry' }
+                    { key: 'copy', icon: <CopyOutlined style={{ color: 'var(--vscode-icon-foreground) !important' }} />, label: 'Copy' },
+                    { key: 'retry', icon: <RedoOutlined style={{ color: 'var(--vscode-icon-foreground) !important' }} />, label: 'Retry' }
                 ]}
                 onClick={(info) => {
                     // Check item for safety, though it should be passed
@@ -89,7 +89,7 @@ export const getBubbleRoles = (handlers: ActionHandlers): BubbleListProps['role'
                     }}
                 />
             ),
-            header: 'User',
+            header: <span style={{ color: 'var(--vscode-foreground)' }}>User</span>,
             styles: COMMON_STYLES.user,
             contentRender: (content) => (
                 <MarkdownRenderer content={typeof content === 'string' ? content : ''} />
@@ -99,8 +99,8 @@ export const getBubbleRoles = (handlers: ActionHandlers): BubbleListProps['role'
                     style={{ opacity: 0.6 }}
                     items={[
                         extendedItem.editable
-                            ? { key: 'done', icon: <CheckOutlined />, label: 'Done' }
-                            : { key: 'edit', icon: <EditOutlined />, label: 'Edit' }
+                            ? { key: 'done', icon: <CheckOutlined style={{ color: 'var(--vscode-icon-foreground)' }} />, label: 'Done' }
+                            : { key: 'edit', icon: <EditOutlined style={{ color: 'var(--vscode-icon-foreground)' }} />, label: 'Edit' }
                     ]}
                     onClick={(info) => {
                         if (info.key === 'edit') handlers.onEdit(extendedItem.key as string);
@@ -118,7 +118,9 @@ export const getBubbleRoles = (handlers: ActionHandlers): BubbleListProps['role'
     },
     system: {
         variant: 'shadow',
-        placement: 'center',
+        style: {
+            alignSelf: 'center',
+        },
         styles: {
             content: {
                 backgroundColor: 'var(--vscode-badge-background)',
