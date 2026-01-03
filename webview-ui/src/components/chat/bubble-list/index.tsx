@@ -14,6 +14,7 @@ interface BubbleListContainerProps {
     messages: Message[];
     isThinking: boolean;
     onEditMessage: (id: string, newContent: string) => void;
+    setMessages: React.Dispatch<React.SetStateAction<Message[]>>; // 🧩 Phase 4: State Setter Injection
 }
 
 /**
@@ -27,10 +28,11 @@ interface BubbleListContainerProps {
 export const BubbleListContainer: React.FC<BubbleListContainerProps> = ({
     messages,
     isThinking,
-    onEditMessage
+    onEditMessage,
+    setMessages // Destructure from props
 }) => {
     // 1. Adapter: Transform Data & Lift State
-    const { bubbleItems, handlers } = useChatAdapter(messages, isThinking, onEditMessage);
+    const { bubbleItems, handlers } = useChatAdapter(messages, isThinking, onEditMessage, setMessages);
 
     // 2. Strategy: Get UI Configuration
     // We memoize this to prevent unnecessary re-renders of the Bubble.List

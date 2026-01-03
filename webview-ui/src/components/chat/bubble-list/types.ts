@@ -15,4 +15,10 @@ export interface ExtendedBubbleItem extends BubbleItemType {
 
     // We explicitly type 'editable' because it's crucial for our controlled flow
     editable?: boolean;
+
+    // 🧩 Extension Parameter (Phase 4): Store metadata like feedback, usage, latency
+    extraInfo?: {
+        feedback?: 'like' | 'dislike';
+        [key: string]: any; // Allow future extensions
+    };
 }

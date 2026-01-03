@@ -5,6 +5,7 @@ export interface Message {
     id?: string;
     role: 'user' | 'assistant' | 'system';
     content: string;
+    data?: any; // Extension metadata (e.g., feedback, custom timestamps)
 }
 
 export const useExtension = () => {
@@ -75,5 +76,5 @@ export const useExtension = () => {
         // Better to wait for SYNC_MESSAGES which is triggered immediately by backend.
     };
 
-    return { messages, isThinking, sendMessage, editMessage };
+    return { messages, isThinking, sendMessage, editMessage, setMessages };
 };

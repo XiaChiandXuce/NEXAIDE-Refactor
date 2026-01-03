@@ -1,18 +1,18 @@
-import React, { useState } from 'react';
+import React from 'react';
 import { Actions } from '@ant-design/x';
 import {
     CopyOutlined,
-    RedoOutlined,
-    LikeOutlined,
-    DislikeOutlined,
-    LikeFilled,
-    DislikeFilled
+    RedoOutlined
 } from '@ant-design/icons';
 import type { ActionHandlers } from '../chat.config';
 
 interface FeedbackActionsProps {
     content: string;
     itemKey: string;
+    // 🧩 Phase 4: Receive lifted state from parent
+    extraInfo?: {
+        feedback?: 'like' | 'dislike';
+    };
     handlers: ActionHandlers;
 }
 
@@ -27,58 +27,54 @@ interface FeedbackActionsProps {
 export const FeedbackActions: React.FC<FeedbackActionsProps> = ({
     content,
     itemKey,
+    extraInfo,
     handlers
 }) => {
-    // Local state for immediate visual feedback
-    const [feedback, setFeedback] = useState<'like' | 'dislike' | null>(null);
-
-    const handleFeedback = (type: 'like' | 'dislike') => {
-        // Toggle off if clicking the same one
-        const newFeedback = feedback === type ? null : type;
-        setFeedback(newFeedback);
-
-        // Only trigger handler if it's a new positive action 
-        // (or we could handle cancelation, but for now let's just log the action)
-        if (newFeedback) {
-            handlers.onFeedback(itemKey, newFeedback);
-        }
-    };
-
     return (
         <Actions
-            style={{ opacity: 0.8 }} // Slightly higher opacity for visibility
+            onClick={(info) => {
+                if (info.key === 'copy') handlers.onCopy(content);
+                if (info.key === 'retry') handlers.onRetry(itemKey);
+            }}
             items={[
                 {
                     key: 'copy',
                     icon: <CopyOutlined style={{ color: 'var(--vscode-icon-foreground) !important' }} />,
-                    label: 'Copy'
+                    label: 'Copy',
                 },
                 {
                     key: 'retry',
                     icon: <RedoOutlined style={{ color: 'var(--vscode-icon-foreground) !important' }} />,
-                    label: 'Retry'
+                    label: 'Retry',
                 },
                 {
-                    key: 'like',
-                    icon: feedback === 'like'
-                        ? <LikeFilled style={{ color: 'var(--vscode-textLink-foreground) !important' }} />
-                        : <LikeOutlined style={{ color: 'var(--vscode-icon-foreground) !important' }} />,
-                    label: 'Good'
-                },
-                {
-                    key: 'dislike',
-                    icon: feedback === 'dislike'
-                        ? <DislikeFilled style={{ color: 'var(--vscode-errorForeground) !important' }} />
-                        : <DislikeOutlined style={{ color: 'var(--vscode-icon-foreground) !important' }} />,
-                    label: 'Bad'
+                    key: 'feedback',
+                    // 🚀 Phase 4: Use Official Actions.Feedback Component
+                    // This component handles the UI state (outline vs filled) automatically based on 'value'
+                    actionRender: () => (
+                        <Actions.Feedback
+                            value={extraInfo?.feedback}
+                            onChange={(val) => {
+                                // Delegate update to adapter
+                                // Map null/undefined back to 'like'/'dislike' string if needed
+                                // But usually onChange returns 'like' | 'dislike' | null
+                                if (val) {
+                                    handlers.onFeedback(itemKey, val as 'like' | 'dislike');
+                                }
+                            }}
+                            // Force styles to match VS Code theme
+                            style={{
+                                color: 'var(--vscode-icon-foreground)',
+                                fontSize: '16px' // Ensure size consistency
+                            }}
+                            styles={{
+                                liked: { color: 'var(--vscode-textLink-foreground) !important' },
+                                disliked: { color: 'var(--vscode-errorForeground) !important' }
+                            }}
+                        />
+                    )
                 }
             ]}
-            onClick={(info) => {
-                if (info.key === 'copy') handlers.onCopy(content);
-                if (info.key === 'retry') handlers.onRetry(itemKey);
-                if (info.key === 'like') handleFeedback('like');
-                if (info.key === 'dislike') handleFeedback('dislike');
-            }}
         />
     );
 };

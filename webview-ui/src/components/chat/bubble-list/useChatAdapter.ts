@@ -1,6 +1,6 @@
 import type { ExtendedBubbleItem } from './types';
 import type { Message } from '../../../hooks/useExtension';
-import { useEffect, useState } from 'react';
+import { useMemo, useState } from 'react';
 
 
 /**
@@ -14,10 +14,9 @@ import { useEffect, useState } from 'react';
 export function useChatAdapter(
     messages: Message[],
     isThinking: boolean,
-    onEditMessage: (id: string, newContent: string) => void
+    onEditMessage: (id: string, newContent: string) => void,
+    setMessages: React.Dispatch<React.SetStateAction<Message[]>> // Added setMessages
 ) {
-    const [bubbleItems, setBubbleItems] = useState<ExtendedBubbleItem[]>([]);
-
     // Store the ID of the message currently being edited
     const [editingId, setEditingId] = useState<string | null>(null);
 
@@ -44,13 +43,29 @@ export function useChatAdapter(
             setEditingId(null);
         },
         onFeedback: (id: string, type: 'like' | 'dislike') => {
-            console.log(`[Feedback] Message ${id} received ${type}`);
-            // TODO: Connect to extension message passing
+            // 🚀 Phase 4: Update local state via immutable pattern
+            // This is the "Lifting State Up" in action
+            setMessages(prev => prev.map(msg => {
+                if (msg.id === id) {
+                    return {
+                        ...msg,
+                        // Ensure data object exists
+                        data: {
+                            ...(msg.data || {}),
+                            feedback: type
+                        }
+                    };
+                }
+                return msg;
+            }));
+
+            // TODO: Sync with backend extension
+            console.log(`[Feedback] Message ${id} updated to ${type}`);
         }
     };
 
     // Transform Logic
-    useEffect(() => {
+    const bubbleItems: ExtendedBubbleItem[] = useMemo(() => {
         const newItems: ExtendedBubbleItem[] = messages.flatMap((msg, index) => {
             const isLast = index === messages.length - 1;
 
@@ -65,6 +80,8 @@ export function useChatAdapter(
                 role: role,
                 content: msg.content,
                 editable: editingId === msg.id,
+                // 🧩 Phase 4: Map extraInfo from message metadata
+                extraInfo: msg.data as any,
             };
 
             // 3. Handle Streaming / Typing Effect
@@ -94,7 +111,7 @@ export function useChatAdapter(
             }
         }
 
-        setBubbleItems(newItems);
+        return newItems; // Correctly return the value instead of setting state
 
     }, [messages, isThinking, editingId]);
 

@@ -4,7 +4,7 @@ import { InputBox } from "./components/input/InputBox";
 import "./App.css";
 
 function App() {
-    const { messages, isThinking, sendMessage, editMessage } = useExtension();
+    const { messages, isThinking, sendMessage, editMessage, setMessages } = useExtension();
 
     return (
         <div className="container">
@@ -12,6 +12,7 @@ function App() {
                 messages={messages}
                 isThinking={isThinking}
                 onEditMessage={editMessage}
+                setMessages={setMessages}
             />
             <InputBox onSend={sendMessage} isThinking={isThinking} />
         </div>
