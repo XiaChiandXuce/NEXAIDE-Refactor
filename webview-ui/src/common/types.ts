@@ -34,3 +34,13 @@ export interface StreamCallbacks {
     onError: (err: Error) => void;
     onDone: () => void;
 }
+
+export interface ChatSession {
+    id: string;
+    title: string;
+    timestamp: number;
+    model?: string;
+    preview: string;
+}
+
+export type ViewMode = 'chat' | 'history';
